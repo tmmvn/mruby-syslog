@@ -10,6 +10,7 @@
 #include "mruby/string.h"
 #include "mruby/variable.h"
 
+#define SYSLOG_LENGTH 1023
 static mrb_value
 reset_vars(mrb_state *mrb, mrb_value self)
 {
@@ -70,9 +71,25 @@ mrb_f_syslog_log0(mrb_state *mrb, mrb_value self)
 {
   mrb_int len, prio;
   char *cp;
-
   mrb_get_args(mrb, "is", &prio, &cp, &len);
-  syslog(prio, "%*s", len, cp);
+  if(len <= 0)
+  {
+    return self;
+  }
+  if(len > SYSLOG_LENGTH)
+  {
+    char buf[SYSLOG_LENGTH + 1];
+    memcpy(buf, cp, SYSLOG_LENGTH);
+    buf[SYSLOG_LENGTH] = '\0';
+    syslog(prio, "%s", buf);
+  }
+  else
+  {
+    char buf[len + 1];
+    memcpy(buf, cp, len);
+    buf[len] = '\0';
+    syslog(prio, "%s", buf);
+  }
   return self;
 }
 
